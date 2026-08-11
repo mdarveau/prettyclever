@@ -43,6 +43,10 @@ import {
 import { TDNET_WEIGHTS } from '../src/strategies/tdnet-weights';
 import { extractFeaturesTwice, TDT_SCALE } from '../src/strategies/tdnet-twice';
 import { TDNET_TWICE_WEIGHTS } from '../src/strategies/tdnet-twice-weights';
+import { extractFeaturesBonus } from '../src/strategies/tdnet-bonus';
+import { TDNET_BONUS_WEIGHTS } from '../src/strategies/tdnet-bonus-weights';
+import { extractFeaturesTwiceBonus } from '../src/strategies/tdnet-twice-bonus';
+import { TDNET_TWICE_BONUS_WEIGHTS } from '../src/strategies/tdnet-twice-bonus-weights';
 
 // ---------------------------------------------------------------------------
 // Per-variant value heuristic (beam ordering only — correctness-neutral)
@@ -54,14 +58,17 @@ interface Heuristic {
   scale: number;
 }
 
-function heuristicFor(variantId: string): Heuristic {
+function heuristicFor(variantId: string, guide = 'td-net'): Heuristic {
+  const bonus = guide === 'td-net-bonus';
   switch (variantId) {
     case 'thats-pretty-clever':
-      return { ctx: createEvalCtx(netFromParams(TDNET_WEIGHTS)), extract: extractFeatures, scale: 300 };
+      return bonus
+        ? { ctx: createEvalCtx(netFromParams(TDNET_BONUS_WEIGHTS)), extract: extractFeaturesBonus, scale: 300 }
+        : { ctx: createEvalCtx(netFromParams(TDNET_WEIGHTS)), extract: extractFeatures, scale: 300 };
     case 'twice-as-clever':
       return {
-        ctx: createEvalCtx(netFromParams(TDNET_TWICE_WEIGHTS)),
-        extract: extractFeaturesTwice,
+        ctx: createEvalCtx(netFromParams(bonus ? TDNET_TWICE_BONUS_WEIGHTS : TDNET_TWICE_WEIGHTS)),
+        extract: bonus ? extractFeaturesTwiceBonus : extractFeaturesTwice,
         scale: TDT_SCALE,
       };
     default:
@@ -224,9 +231,9 @@ const games = Number(args.games ?? 20);
 const seed0 = Number(args.seed ?? 5000);
 const beam = Number(args.beam ?? 64);
 const strategyName = args.strategy ?? 'td-net';
-const h = heuristicFor(v.id);
+const h = heuristicFor(v.id, args.guide ?? 'td-net');
 
-console.log(`hindsight — ${v.id}, ${games} worlds from seed ${seed0}, beam ${beam}, policy ${strategyName}`);
+console.log(`hindsight — ${v.id}, ${games} worlds from seed ${seed0}, beam ${beam}, policy ${strategyName}, guide ${args.guide ?? 'td-net'}`);
 console.log('seed     policy  hindsight  efficiency');
 
 const meanLine = { policy: null as Line | null, hindsight: null as Line | null };

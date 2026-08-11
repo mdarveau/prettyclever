@@ -480,6 +480,12 @@ export interface TdNetBonusOpts {
   name?: string;
 }
 
+/** Leaf evaluation on the score scale, for expectimax's `evalFn`. */
+export function makeTdNetBonusEval(params?: TdNetParams): (s: GameState, v: VariantDef) => number {
+  const ctx = createEvalCtx(netFromParams(params ?? TDNET_BONUS_WEIGHTS));
+  return (s, v) => 300 * stateValueBonus(ctx, s, v);
+}
+
 export function makeTdNetBonus(opts: TdNetBonusOpts = {}): Strategy {
   const ctx = createEvalCtx(netFromParams(opts.params ?? TDNET_BONUS_WEIGHTS));
   return {
